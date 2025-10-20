@@ -1,12 +1,14 @@
 import PageLoader from '@/components/PageLoader'
 import { initPearRuntime, swarm } from '@/modules/pear-runtime'
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const AppContext = createContext()
 
 export const AppProvider = ({ children }) => {
   const [isAppLoading, setIsAppLoading] = useState(true)
   const [loadingMessage, setLoadingMessage] = useState('Loading...')
+  const navigate = useNavigate()
 
   useEffect(() => {
     const run = async () => {
@@ -25,6 +27,12 @@ export const AppProvider = ({ children }) => {
 
       setIsAppLoading(false)
     }
+
+    // Pear.teardown(async () => {
+    //   console.log('Perform async teardown here')
+    //   navigate('/goodbye', { replace: true })
+    //   await swarm.destroy()
+    // })
 
     run()
   }, []) // don't include navigate in deps to avoid extra redirects

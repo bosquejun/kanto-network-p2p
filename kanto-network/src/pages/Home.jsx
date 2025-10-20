@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { useUser } from '@/context/UserContext'
 
 function Home() {
@@ -10,6 +11,16 @@ function Home() {
           ? `Welcome, ${profile?.username || profile?.shortPublicKey}!`
           : 'Loading...'}
       </p>
+
+      {[...Array(50)].map((_, index) => (
+        <div key={index} className='mt-4 p-4 bg-card rounded-lg'>
+          <h3 className='text-lg font-semibold'>Post {index + 1}</h3>
+          <p className='text-muted-foreground mt-1'>
+            This is a post by {profile?.username || profile?.shortPublicKey}.
+          </p>
+          <Button>Post</Button>
+        </div>
+      ))}
     </div>
   )
 }

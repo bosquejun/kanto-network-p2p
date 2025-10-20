@@ -4,6 +4,7 @@ import Hyperswarm from 'hyperswarm'
 import path from 'path'
 import ui from 'pear-electron'
 import updates from 'pear-updates'
+import { toast } from 'sonner'
 import { initGlobalUserFeed } from './global/user-feed'
 import { initUserMyFeed } from './user/my-feed'
 
@@ -43,8 +44,8 @@ export const initPearRuntime = async (onStatusChange = null) => {
 
   Pear.teardown(async () => {
     console.log('Perform async teardown here')
+    toast.loading('Shutting down...')
     await swarm.destroy()
-    // await new Promise((resolve) => setTimeout(resolve, 500)) // example async work
   })
 
   onStatusChange?.('Initializing p2p network..')
