@@ -31,6 +31,8 @@ export const initPearRuntime = async (onStatusChange = null) => {
 
     if (window.location.pathname !== '/') {
       window.location.href = '/'
+      window.location.reload()
+      return
     }
   })
 

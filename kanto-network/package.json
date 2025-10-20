@@ -8,10 +8,12 @@
     "pre": "pear-electron/pre",
     "name": "kanto-network",
     "gui": {
-      "width": 1280,
-      "height": 728,
-      "minWidth": 512,
-      "minHeight": 512,
+      "width": 1024,
+      "height": 700,
+      "minWidth": 800,
+      "minHeight": 600,
+      "maxWidth": 3840,
+      "maxHeight": 2160,
       "name": "Kanto Network"
     },
     "env": {

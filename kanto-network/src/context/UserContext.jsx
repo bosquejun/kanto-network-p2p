@@ -44,6 +44,7 @@ export const UserProvider = ({ children }) => {
   const setupUser = async (username = null) => {
     const profile = await setupNewUser(username)
     setProfile(profile)
+    setIsProfileLoaded(true)
     navigate('/', { replace: true })
   }
 

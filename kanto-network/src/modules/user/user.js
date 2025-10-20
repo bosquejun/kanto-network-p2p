@@ -63,7 +63,7 @@ export const setupNewUser = async (username = null) => {
 
   await db.put('profile', profile)
 
-  await db.core.update()
+  await db.update()
 
   return profile
 }
