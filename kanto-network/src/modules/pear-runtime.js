@@ -1,32 +1,59 @@
 /** @typedef {import('pear-interface')} */ /* global Pear */
+import Corestore from 'corestore'
+import Hyperswarm from 'hyperswarm'
+import path from 'path'
 import ui from 'pear-electron'
 import updates from 'pear-updates'
-console.log('link', Pear.config.link)
-console.log('linkData', Pear.config.linkData)
-console.log('key', Pear.config.key)
+import { initGlobalUserFeed } from './global/user-feed'
+import { initUserMyFeed } from './user/my-feed'
 
-updates(async () => {
-  const updateIndicator = document.getElementById('pear-update-indicator')
-  updateIndicator.style.display = 'flex'
-  setTimeout(() => {
-    updateIndicator.style.display = 'none'
-    window.location.reload()
-  }, 2000)
-})
+// console.log('link', Pear.config.link)
+// console.log('linkData', Pear.config.linkData)
+// console.log('key', Pear.config.key)
 
-Pear.wakeups(async (wakeup) => {
-  console.log('GOT WAKEUP', wakeup)
-  await ui.app.focus({ steal: true })
-})
+let initialized = false
 
-Pear.teardown(async () => {
-  console.log('Perform async teardown here')
-  await new Promise((resolve) => setTimeout(resolve, 500)) // example async work
-})
+const store = new Corestore(path.join(Pear.app.storage, 'storage'))
+const swarm = new Hyperswarm()
 
-console.log('Pear.config', Pear.config)
+export const initPearRuntime = async (onStatusChange = null) => {
+  console.log('attempting to initialize pear runtime')
+  if (initialized) return
+  console.log('Initializing Pear Runtime')
+  onStatusChange?.('Initializing app..')
 
-const { app, platform } = await Pear.versions()
+  initialized = true
 
-console.log('app', app)
-console.log('platform', platform)
+  await store.ready()
+
+  updates(async () => {
+    console.log('window.location.pathname', window.location.pathname)
+
+    if (window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
+  })
+
+  Pear.wakeups(async (wakeup) => {
+    console.log('GOT WAKEUP', wakeup)
+    await ui.app.focus({ steal: true })
+  })
+
+  Pear.teardown(async () => {
+    console.log('Perform async teardown here')
+    await swarm.destroy()
+    // await new Promise((resolve) => setTimeout(resolve, 500)) // example async work
+  })
+
+  onStatusChange?.('Initializing p2p network..')
+  // global user feed
+  await initGlobalUserFeed(Pear)
+
+  onStatusChange?.('Syncing user data..')
+  // user my feed
+  await initUserMyFeed()
+
+  onStatusChange?.('Loading user interface..')
+}
+
+export { store, swarm }
