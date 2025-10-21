@@ -1,5 +1,13 @@
 import { Card } from '@/components/ui/card'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Activity } from 'lucide-react'
 
 function ProfileActivity({ isLoading }) {
   if (isLoading) {
@@ -22,11 +30,18 @@ function ProfileActivity({ isLoading }) {
       </div>
 
       {activities.length === 0 ? (
-        <Card className='p-12 text-center'>
-          <p className='text-muted-foreground'>
-            No activity yet. Start exploring the network!
-          </p>
-        </Card>
+        <Empty className='border'>
+          <EmptyHeader>
+            <EmptyMedia variant='icon'>
+              <Activity />
+            </EmptyMedia>
+            <EmptyTitle>No activity yet</EmptyTitle>
+            <EmptyDescription>
+              Your recent activities will appear here. Start exploring the
+              network to see updates!
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         activities.map((activity, index) => (
           <Card key={index} className='p-4'>

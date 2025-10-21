@@ -1,3 +1,4 @@
+import ProfileEditDialog from '@/components/ProfileEditDialog'
 import ProfileSkeleton from '@/components/ProfileSkeleton'
 import ProfileActivity from '@/components/profile/ProfileActivity'
 import ProfileOverview from '@/components/profile/ProfileOverview'
@@ -29,6 +30,7 @@ const TABS = [
 function Profile() {
   const { profile, isProfileLoaded } = useUser()
   const [activeTab, setActiveTab] = useState('overview')
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   if (!isProfileLoaded) {
     return (
@@ -62,7 +64,7 @@ function Profile() {
       <div className='flex flex-col lg:flex-row gap-6 h-full'>
         {/* Sidebar Navigation - Mobile: Horizontal scroll, Desktop: Vertical */}
         <aside className='w-full lg:w-64 shrink-0'>
-          <div className='lg:sticky lg:top-20'>
+          <div className='lg:sticky lg:top-6'>
             {/* Mobile: Horizontal scroll tabs */}
             <div className='flex lg:hidden overflow-x-auto gap-2 pb-2 -mx-4 px-4'>
               {TABS.map((tab) => {
@@ -113,7 +115,7 @@ function Profile() {
         <main className='flex-1 min-w-0'>
           <div className='space-y-6'>
             {/* Cover Image with Gradient */}
-            <div className='relative h-48 rounded-lg overflow-hidden bg-linear-to-br from-primary via-primary/80 to-primary/60'>
+            <div className='relative h-48 rounded-lg overflow-hidden bg-linear-to-br from-primary/40 via-primary/30 to-primary/20'>
               <Button
                 size='sm'
                 variant='secondary'
@@ -164,11 +166,11 @@ function Profile() {
                   </p>
                 </div>
 
-                {/* Edit Profile Button - Mobile */}
+                {/* Edit Profile Button */}
                 <Button
                   variant='outline'
                   className='w-full sm:w-auto sm:mt-16'
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => setIsEditDialogOpen(true)}
                 >
                   Edit Profile
                 </Button>
@@ -196,6 +198,13 @@ function Profile() {
           </div>
         </main>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <ProfileEditDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        profile={profile}
+      />
     </div>
   )
 }

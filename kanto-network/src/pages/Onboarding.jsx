@@ -13,26 +13,17 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { useUser } from '@/context/UserContext'
-import { useDebounceCallback } from '@/hooks/use-debounce-callback'
+import { useUsernameValidation } from '@/hooks/use-username-validation'
 import { cn } from '@/lib/utils'
-import usernameRegistry from '@/modules/global/username-registry'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { ArrowRight, Globe, Info, Loader } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
-
-function isUsernameValid(username) {
-  username = username.trim()
-  if (!username) return false
-  if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return false
-  return true
-}
+import { useState } from 'react'
 
 function Onboarding() {
-  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const { setupUser } = useUser()
-  const [isSearching, setIsSearching] = useState(false)
-  const [isAvailable, setIsAvailable] = useState(null)
+  const { username, isSearching, isAvailable, isValid, handleUsernameChange } =
+    useUsernameValidation()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -41,7 +32,7 @@ function Onboarding() {
       setError('Please enter a username')
       return
     }
-    if (!isUsernameValid(value)) {
+    if (!isValid) {
       setError('Use 3-20 chars: letters, numbers, underscore')
       return
     }
@@ -53,40 +44,17 @@ function Onboarding() {
     await setupUser()
   }
 
-  const handleSearchUsername = useCallback(async (username) => {
-    const entry = await usernameRegistry.lookUpUsername(username)
-    setIsAvailable(!entry)
-    setIsSearching(false)
-  }, [])
-
-  const handleDebouncedSearch = useDebounceCallback(handleSearchUsername, 500)
-
-  const handleUsernameChange = (e) => {
-    const value = e.target.value
-    setUsername(value)
-    if (!isUsernameValid(value)) {
-      setIsAvailable(null)
-      setIsSearching(false)
-      console.log('attempting to cancel handleDebouncedSearch')
-      if (handleDebouncedSearch.isPending()) {
-        handleDebouncedSearch.cancel()
-      }
-
-      return
-    }
-    setIsSearching(true)
-    handleDebouncedSearch(value)
+  const handleInputChange = (e) => {
+    handleUsernameChange(e.target.value)
   }
 
   const handleKeyUp = (e) => {
     if (e.key === 'Enter') {
-      if (isAvailable === true && !isSearching && isUsernameValid(username)) {
+      if (isAvailable === true && !isSearching && isValid) {
         handleSubmit(e)
       }
     }
   }
-
-  const isValidUsername = useMemo(() => isUsernameValid(username), [username])
 
   return (
     <div className='flex items-center justify-center h-[calc(100vh-112px)]'>
@@ -107,7 +75,8 @@ function Onboarding() {
                 <InputGroupInput
                   id='username'
                   placeholder='juan_delacruz'
-                  onChange={handleUsernameChange}
+                  value={username}
+                  onChange={handleInputChange}
                   onKeyUp={handleKeyUp}
                   maxLength={20}
                 />
@@ -184,9 +153,7 @@ function Onboarding() {
                 Skip
               </Button>
               <Button
-                disabled={
-                  isSearching || isAvailable !== true || !isValidUsername
-                }
+                disabled={isSearching || isAvailable !== true || !isValid}
                 type='submit'
                 className='group'
               >

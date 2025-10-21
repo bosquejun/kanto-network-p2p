@@ -6,12 +6,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { useUser } from '@/context/UserContext'
 import { IconDeviceFloppy } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-function ProfileSettings({ profile, isLoading }) {
+function ProfileSettings({ profile, isLoading, onCancel, onSave }) {
   const { updateProfile } = useUser()
-  const [isEditing, setIsEditing] = useState(false)
+  // If onCancel/onSave props are provided, we're in inline edit mode
+  const isInlineEdit = Boolean(onCancel && onSave)
+  const [isEditing, setIsEditing] = useState(isInlineEdit)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     username: profile?.username || '',
@@ -20,6 +22,19 @@ function ProfileSettings({ profile, isLoading }) {
     location: profile?.location || '',
     website: profile?.website || ''
   })
+
+  // Sync form data when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        username: profile.username || '',
+        displayName: profile.displayName || '',
+        bio: profile.bio || '',
+        location: profile.location || '',
+        website: profile.website || ''
+      })
+    }
+  }, [profile])
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -34,6 +49,7 @@ function ProfileSettings({ profile, isLoading }) {
       await updateProfile(formData)
       toast.success('Profile updated successfully!')
       setIsEditing(false)
+      if (onSave) onSave()
     } catch (error) {
       toast.error('Failed to update profile')
       console.error('Error updating profile:', error)
@@ -51,6 +67,7 @@ function ProfileSettings({ profile, isLoading }) {
       website: profile?.website || ''
     })
     setIsEditing(false)
+    if (onCancel) onCancel()
   }
 
   if (isLoading) {
@@ -65,8 +82,10 @@ function ProfileSettings({ profile, isLoading }) {
     <div className='space-y-6'>
       <Card className='p-6'>
         <div className='flex items-center justify-between mb-6'>
-          <h3 className='text-lg font-semibold'>Profile Settings</h3>
-          {!isEditing && (
+          <h3 className='text-lg font-semibold'>
+            {isInlineEdit ? 'Edit Profile' : 'Profile Settings'}
+          </h3>
+          {!isEditing && !isInlineEdit && (
             <Button variant='outline' onClick={() => setIsEditing(true)}>
               Edit Profile
             </Button>
