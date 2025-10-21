@@ -110,7 +110,7 @@ export default function BottomBar() {
   return (
     <div
       className={cn(
-        'fixed bottom-0 w-full h-18 flex items-center justify-center z-[100] pb-4 bg-transparent transition-all duration-200'
+        'fixed bottom-0 w-full h-18 flex items-center justify-center z-30 pb-4 bg-transparent transition-all duration-200'
       )}
     >
       <LimelightNav

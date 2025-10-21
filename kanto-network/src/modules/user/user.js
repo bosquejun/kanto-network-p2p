@@ -1,5 +1,6 @@
 import { shortPublicKey, toHex } from '@/lib/utils'
 import Hyperbee from 'hyperbee'
+import usernameRegistry from '../global/username-registry'
 import { store } from '../pear-runtime'
 
 export const getUserPublicKey = async () => {
@@ -68,8 +69,24 @@ export const setupNewUser = async (username = null) => {
   }
 
   await db.put('profile', profile)
-
   await db.update()
+
+  // Register username in global registry
+  if (username) {
+    console.log(`📝 Registering username "${username}" in global registry...`)
+    const registered = await usernameRegistry.registerUsername(username, {
+      publicKey,
+      displayName: profile.displayName,
+      avatar: profile.avatar,
+      joinedAt: profile.joinedAt
+    })
+
+    if (!registered) {
+      console.warn(`⚠️ Username "${username}" could not be registered (might be taken by another peer)`)
+      // In a production app, you might want to handle this case
+      // For now, the user keeps the username locally but it's not globally registered
+    }
+  }
 
   return profile
 }
@@ -90,6 +107,23 @@ export const updateUserProfile = async (updates) => {
 
   await db.put('profile', updatedProfile)
   await db.update()
+
+  // If username changed, register in global registry
+  if (updates.username && updates.username !== currentProfile.value.username) {
+    console.log(`📝 Registering new username "${updates.username}" in global registry...`)
+    const publicKey = toHex(db.core.keyPair.publicKey)
+    
+    const registered = await usernameRegistry.registerUsername(updates.username, {
+      publicKey,
+      displayName: updatedProfile.displayName,
+      avatar: updatedProfile.avatar,
+      joinedAt: updatedProfile.joinedAt
+    })
+
+    if (!registered) {
+      throw new Error(`Username "${updates.username}" is already taken`)
+    }
+  }
 
   return updatedProfile
 }

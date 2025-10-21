@@ -15,7 +15,7 @@ export function useUsernameValidation(initialUsername = '') {
   const [isAvailable, setIsAvailable] = useState(null)
 
   const handleSearchUsername = useCallback(async (username) => {
-    const entry = await usernameRegistry.lookUpUsername(username)
+    const entry = await usernameRegistry.lookupUsername(username)
     setIsAvailable(!entry)
     setIsSearching(false)
   }, [])
