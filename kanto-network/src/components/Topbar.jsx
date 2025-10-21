@@ -1,6 +1,7 @@
 import { cn, getAppOS } from '@/lib/utils'
 import { IconRotateClockwise } from '@tabler/icons-react'
 import ui from 'pear-electron'
+import Pear from 'pear-interface'
 import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 
@@ -93,8 +94,18 @@ function Topbar() {
         </div>
 
         <div className='ml-auto flex items-center'>
-          <div className='flex items-center gap-1 -mr-4'>
-            <Button size='sm' variant='ghost' onClick={Pear.reload}>
+          <div
+            className={cn('flex items-center gap-1', {
+              '-mr-4': os === 'linux'
+            })}
+          >
+            <Button
+              size='sm'
+              variant='ghost'
+              onClick={() => {
+                Pear.reload({ platform: true })
+              }}
+            >
               <IconRotateClockwise />
             </Button>
           </div>
