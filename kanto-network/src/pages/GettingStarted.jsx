@@ -30,7 +30,7 @@ function GettingStarted() {
   const [dir, setDir] = useState(1) // 1: forward, -1: back
 
   return (
-    <div className='relative min-h-dvh flex items-center'>
+    <div className='relative flex items-center h-[calc(100vh-112px)]'>
       <div className='container max-w-3xl mx-auto p-4 md:p-8'>
         {/* Heading */}
         <div className='text-center mb-8'>

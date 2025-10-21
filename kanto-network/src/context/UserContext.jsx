@@ -1,7 +1,8 @@
 import {
   getUserProfile,
   hasCompletedOnboarding,
-  setupNewUser
+  setupNewUser,
+  updateUserProfile
 } from '@/modules/user/user'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -48,8 +49,16 @@ export const UserProvider = ({ children }) => {
     navigate('/', { replace: true })
   }
 
+  const updateProfile = async (updates) => {
+    const updatedProfile = await updateUserProfile(updates)
+    setProfile(updatedProfile)
+    return updatedProfile
+  }
+
   return (
-    <UserContext.Provider value={{ profile, isProfileLoaded, setupUser }}>
+    <UserContext.Provider
+      value={{ profile, isProfileLoaded, setupUser, updateProfile }}
+    >
       {children}
     </UserContext.Provider>
   )

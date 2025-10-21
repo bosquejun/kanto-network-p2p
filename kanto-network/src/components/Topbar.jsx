@@ -1,9 +1,13 @@
 import { cn, getAppOS } from '@/lib/utils'
 import { IconRotateClockwise } from '@tabler/icons-react'
 import ui from 'pear-electron'
-import Pear from 'pear-interface'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from './ui/button'
+import WindowControl from './WindowControl'
+
+/* global Pear */
+const p = typeof Pear !== 'undefined' ? Pear : window.Pear
 
 function Topbar() {
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -71,11 +75,7 @@ function Topbar() {
         'border-transparent bg-transparent': !isScrolled
       })}
     >
-      <div
-        className={cn('flex h-10 items-center px-2', {
-          '-mr-2': os === 'linux'
-        })}
-      >
+      <div className='flex h-10 items-center px-2'>
         {os === 'macos' && (
           <div
             className={cn({
@@ -93,23 +93,22 @@ function Topbar() {
           kanto.network
         </div>
 
-        <div className='ml-auto flex items-center'>
-          <div
-            className={cn('flex items-center gap-1', {
-              '-mr-4': os === 'linux'
-            })}
-          >
+        <div className='ml-auto flex items-center gap-0.5'>
+          <div className='flex items-center gap-0.5'>
             <Button
               size='sm'
               variant='ghost'
               onClick={() => {
-                Pear.reload({ platform: true })
+                toast.loading('Reloading...', {
+                  id: 'reload-toast'
+                })
+                p.reload?.()
               }}
             >
               <IconRotateClockwise />
             </Button>
           </div>
-          {os !== 'macos' && <pear-ctrl />}
+          {os !== 'macos' && <WindowControl isFullscreen={isFullscreen} />}
         </div>
         {/* <NavigationMenu className='ml-auto'>
           <NavigationMenuList>

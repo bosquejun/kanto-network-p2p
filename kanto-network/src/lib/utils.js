@@ -1,5 +1,6 @@
 import b4a from 'b4a'
 import { clsx } from 'clsx'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs) {
@@ -33,4 +34,8 @@ export const getAppOS = () => {
   if (platform.includes('Mac')) return 'macos'
   if (platform.includes('Linux')) return 'linux'
   return 'unknown'
+}
+
+export const getToastById = (id) => {
+  return toast.getToasts().find((t) => t.id === id)
 }

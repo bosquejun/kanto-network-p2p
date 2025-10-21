@@ -1,7 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
-import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import svgr from 'vite-plugin-svgr'
@@ -23,8 +22,8 @@ export default defineConfig({
           dest: './engine'
         }
       ]
-    }),
-    visualizer({ open: true }) // Open report after build
+    })
+    // visualizer({ open: true }) // Open report after build
   ],
   resolve: {
     alias: {
@@ -47,8 +46,10 @@ export default defineConfig({
 
     rollupOptions: {
       output: {
-        entryFileNames: 'app.js',
-        preserveModules: true
+        entryFileNames: 'app.[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        preserveModules: false
       },
       external: [
         'util',

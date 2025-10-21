@@ -1,75 +1,200 @@
+import ProfileSkeleton from '@/components/ProfileSkeleton'
+import ProfileActivity from '@/components/profile/ProfileActivity'
+import ProfileOverview from '@/components/profile/ProfileOverview'
+import ProfileSettings from '@/components/profile/ProfileSettings'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { useUser } from '@/context/UserContext'
+import { cn } from '@/lib/utils'
+import {
+  IconActivity,
+  IconCamera,
+  IconSettings,
+  IconUser
+} from '@tabler/icons-react'
+import { useState } from 'react'
+
+// Note: Lazy loading doesn't work with Pear's runtime due to module transformation
+// Using direct imports for reliability - this is actually better for desktop apps:
+// - No network requests after initial load
+// - Instant tab switching
+// - Smaller bundle overhead than you'd think
+
+const TABS = [
+  { id: 'overview', label: 'Overview', icon: IconUser },
+  { id: 'settings', label: 'Settings', icon: IconSettings },
+  { id: 'activity', label: 'Activity', icon: IconActivity }
+]
 
 function Profile() {
   const { profile, isProfileLoaded } = useUser()
+  const [activeTab, setActiveTab] = useState('overview')
 
   if (!isProfileLoaded) {
     return (
-      <div className='container p-4 md:p-6'>
-        <p className='text-muted-foreground'>Loading profile...</p>
+      <div className='container mx-auto px-4 py-6 max-w-7xl'>
+        <ProfileSkeleton />
       </div>
     )
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <ProfileOverview profile={profile} isLoading={!isProfileLoaded} />
+        )
+      case 'settings':
+        return (
+          <ProfileSettings profile={profile} isLoading={!isProfileLoaded} />
+        )
+      case 'activity':
+        return <ProfileActivity isLoading={!isProfileLoaded} />
+      default:
+        return (
+          <ProfileOverview profile={profile} isLoading={!isProfileLoaded} />
+        )
+    }
+  }
+
   return (
-    <div className='container p-4 md:p-6'>
-      <div className='max-w-2xl mx-auto'>
-        <div className='bg-card rounded-lg border p-6'>
-          <div className='flex items-center gap-4'>
-            <div className='w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center'>
-              <span className='text-3xl font-bold text-primary'>
-                {profile?.username?.[0]?.toUpperCase() || 'U'}
-              </span>
+    <div className='container mx-auto px-4 py-6 max-w-7xl'>
+      <div className='flex flex-col lg:flex-row gap-6 h-full'>
+        {/* Sidebar Navigation - Mobile: Horizontal scroll, Desktop: Vertical */}
+        <aside className='w-full lg:w-64 shrink-0'>
+          <div className='lg:sticky lg:top-20'>
+            {/* Mobile: Horizontal scroll tabs */}
+            <div className='flex lg:hidden overflow-x-auto gap-2 pb-2 -mx-4 px-4'>
+              {TABS.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap',
+                      activeTab === tab.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                    )}
+                  >
+                    <Icon className='w-4 h-4' />
+                    {tab.label}
+                  </button>
+                )
+              })}
             </div>
-            <div>
-              <h2 className='text-2xl font-semibold'>
-                {profile?.username || 'Anonymous User'}
-              </h2>
-              <p className='text-sm text-muted-foreground mt-1'>
-                {profile?.shortPublicKey}
-              </p>
-            </div>
-          </div>
 
-          <div className='mt-6 space-y-4'>
-            <div>
-              <h3 className='text-lg font-semibold'>About</h3>
-              <p className='text-muted-foreground mt-2'>
-                Welcome to your profile page. Here you can manage your account
-                settings and view your activity.
-              </p>
+            {/* Desktop: Vertical navigation */}
+            <nav className='hidden lg:flex flex-col gap-2'>
+              {TABS.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors text-left',
+                      activeTab === tab.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    )}
+                  >
+                    <Icon className='w-5 h-5' />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className='flex-1 min-w-0'>
+          <div className='space-y-6'>
+            {/* Cover Image with Gradient */}
+            <div className='relative h-48 rounded-lg overflow-hidden bg-linear-to-br from-primary via-primary/80 to-primary/60'>
+              <Button
+                size='sm'
+                variant='secondary'
+                className='absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity'
+              >
+                <IconCamera className='w-4 h-4 mr-2' />
+                Change Cover
+              </Button>
             </div>
 
-            <div className='grid grid-cols-3 gap-4 pt-4'>
-              <div className='text-center p-4 bg-background rounded-lg'>
-                <div className='text-2xl font-bold'>42</div>
-                <div className='text-sm text-muted-foreground'>Posts</div>
+            {/* Profile Header */}
+            <div className='relative -mt-20 px-4 sm:px-6'>
+              <div className='flex flex-col sm:flex-row items-start gap-4'>
+                {/* Avatar */}
+                <div className='relative group'>
+                  <Avatar className='w-32 h-32 border-4 border-background ring-2 ring-primary/10'>
+                    <AvatarImage
+                      src={profile?.avatar}
+                      alt={profile?.username || 'User'}
+                    />
+                    <AvatarFallback className='text-4xl font-bold bg-primary/10 text-primary'>
+                      {profile?.username?.[0]?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button className='absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity'>
+                    <IconCamera className='w-6 h-6 text-white' />
+                  </button>
+                </div>
+
+                {/* Name and Info */}
+                <div className='flex-1 mt-0 sm:mt-16 min-w-0'>
+                  <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4'>
+                    <div className='min-w-0'>
+                      <h1 className='text-2xl sm:text-3xl font-bold truncate'>
+                        {profile?.displayName ||
+                          profile?.username ||
+                          'Anonymous User'}
+                      </h1>
+                      {profile?.displayName && (
+                        <p className='text-sm text-muted-foreground'>
+                          @{profile?.username}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <p className='text-sm text-muted-foreground mt-2 font-mono truncate'>
+                    {profile?.shortPublicKey}
+                  </p>
+                </div>
+
+                {/* Edit Profile Button - Mobile */}
+                <Button
+                  variant='outline'
+                  className='w-full sm:w-auto sm:mt-16'
+                  onClick={() => setActiveTab('settings')}
+                >
+                  Edit Profile
+                </Button>
               </div>
-              <div className='text-center p-4 bg-background rounded-lg'>
-                <div className='text-2xl font-bold'>128</div>
-                <div className='text-sm text-muted-foreground'>Following</div>
-              </div>
-              <div className='text-center p-4 bg-background rounded-lg'>
-                <div className='text-2xl font-bold'>256</div>
-                <div className='text-sm text-muted-foreground'>Followers</div>
+
+              {/* Stats */}
+              <div className='grid grid-cols-3 gap-4 mt-6'>
+                <div className='text-center p-4 bg-card rounded-lg border'>
+                  <div className='text-2xl font-bold'>0</div>
+                  <div className='text-sm text-muted-foreground'>Posts</div>
+                </div>
+                <div className='text-center p-4 bg-card rounded-lg border'>
+                  <div className='text-2xl font-bold'>0</div>
+                  <div className='text-sm text-muted-foreground'>Following</div>
+                </div>
+                <div className='text-center p-4 bg-card rounded-lg border'>
+                  <div className='text-2xl font-bold'>0</div>
+                  <div className='text-sm text-muted-foreground'>Followers</div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className='mt-6'>
-          <h3 className='text-lg font-semibold mb-4'>Recent Activity</h3>
-          <div className='space-y-3'>
-            {[...Array(10)].map((_, index) => (
-              <div key={index} className='p-4 bg-card rounded-lg border'>
-                <h4 className='font-semibold'>Activity {index + 1}</h4>
-                <p className='text-sm text-muted-foreground mt-1'>
-                  Your recent activity in the network.
-                </p>
-              </div>
-            ))}
+            {/* Tab Content */}
+            <div className='px-4 sm:px-6'>{renderContent()}</div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )
