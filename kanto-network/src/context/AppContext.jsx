@@ -1,5 +1,5 @@
 import PageLoader from '@/components/PageLoader'
-import { initPearRuntime, swarm } from '@/modules/pear-runtime'
+import { initPearRuntime, store, swarm } from '@/modules/pear-runtime'
 import { createContext, useContext, useEffect, useState } from 'react'
 
 const AppContext = createContext()
@@ -12,6 +12,7 @@ export const AppProvider = ({ children }) => {
     const run = async () => {
       swarm.on('connection', (socket) => {
         console.log('connection', socket)
+        store.replicate(socket)
       })
 
       await initPearRuntime((status) => {

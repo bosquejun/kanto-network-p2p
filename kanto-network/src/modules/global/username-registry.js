@@ -49,12 +49,9 @@ const usernameRegistry = {
       )
     }
 
-    // Setup peer discovery and replication
-    swarm.on('connection', (conn, info) => {
+    // Setup peer discovery
+    swarm.on('connection', (conn) => {
       console.log('📡 New peer connection for username registry')
-
-      // Replicate the entire corestore (includes all cores)
-      store.replicate(conn)
 
       // Exchange registry keys with peer
       conn.once('data', async (data) => {
