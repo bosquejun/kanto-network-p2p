@@ -1,4 +1,6 @@
 /** @typedef {import('pear-interface')} */ /* global Pear */
+import { initUserActivity } from '@/features/feed/data/activity'
+import { initUserMyFeed } from '@/features/feed/data/my-feed'
 import { getToastById } from '@/lib/utils'
 import Corestore from 'corestore'
 import Hyperswarm from 'hyperswarm'
@@ -7,7 +9,6 @@ import ui from 'pear-electron'
 import updates from 'pear-updates'
 import { toast } from 'sonner'
 import usernameRegistry from './global/username-registry'
-import { initUserMyFeed } from './user/my-feed'
 
 let initialized = false
 
@@ -74,6 +75,7 @@ export const initPearRuntime = async (onStatusChange = null) => {
 
   onStatusChange?.('Preparing user data..')
   await initUserMyFeed()
+  await initUserActivity()
 
   onStatusChange?.('Loading user interface..')
 }

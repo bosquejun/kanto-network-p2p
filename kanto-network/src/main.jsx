@@ -3,6 +3,7 @@ import GettingStarted from '@/pages/GettingStarted'
 import Home from '@/pages/Home'
 import Notifications from '@/pages/Notifications'
 import Onboarding from '@/pages/Onboarding'
+import Post from '@/pages/Post'
 import Profile from '@/pages/Profile'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -48,7 +49,8 @@ const router = createBrowserRouter([
           { index: true, element: <Home /> },
           { path: 'explore', element: <Explore /> },
           { path: 'notifications', element: <Notifications /> },
-          { path: 'profile', element: <Profile /> }
+          { path: 'profile', element: <Profile /> },
+          { path: 'feed/:feedKeyHex/posts/:postKey', element: <Post /> }
         ]
       },
       { path: '/onboarding', element: <Onboarding /> },

@@ -1,3 +1,5 @@
+import { getUserActivity } from '@/features/feed/data/activity'
+import { getUserMyFeed } from '@/features/feed/data/my-feed'
 import { shortPublicKey, toHex } from '@/lib/utils'
 import Hyperbee from 'hyperbee'
 import usernameRegistry from '../global/username-registry'
@@ -45,7 +47,7 @@ export const getUserProfile = async () => {
 }
 
 export const getUserKey = async () => {
-  const db = await getDb()
+  const db = await getUserDb()
 
   return {
     publicKey: toHex(db.core.publicKey),
@@ -71,6 +73,15 @@ export const setupNewUser = async (username = null) => {
   await db.put('profile', profile)
   await db.update()
 
+  // Publish my feed and activity keys for discovery by followers
+  const myFeed = await getUserMyFeed()
+  const myActivity = await getUserActivity()
+  await db.put('feeds', {
+    posts: { key: myFeed.key, discoveryKey: myFeed.discoveryKey },
+    activity: { key: myActivity.key, discoveryKey: myActivity.discoveryKey }
+  })
+  await db.update()
+
   // Register username in global registry
   if (username) {
     console.log(`📝 Registering username "${username}" in global registry...`)
@@ -82,7 +93,9 @@ export const setupNewUser = async (username = null) => {
     })
 
     if (!registered) {
-      console.warn(`⚠️ Username "${username}" could not be registered (might be taken by another peer)`)
+      console.warn(
+        `⚠️ Username "${username}" could not be registered (might be taken by another peer)`
+      )
       // In a production app, you might want to handle this case
       // For now, the user keeps the username locally but it's not globally registered
     }
@@ -110,15 +123,20 @@ export const updateUserProfile = async (updates) => {
 
   // If username changed, register in global registry
   if (updates.username && updates.username !== currentProfile.value.username) {
-    console.log(`📝 Registering new username "${updates.username}" in global registry...`)
+    console.log(
+      `📝 Registering new username "${updates.username}" in global registry...`
+    )
     const publicKey = toHex(db.core.keyPair.publicKey)
-    
-    const registered = await usernameRegistry.registerUsername(updates.username, {
-      publicKey,
-      displayName: updatedProfile.displayName,
-      avatar: updatedProfile.avatar,
-      joinedAt: updatedProfile.joinedAt
-    })
+
+    const registered = await usernameRegistry.registerUsername(
+      updates.username,
+      {
+        publicKey,
+        displayName: updatedProfile.displayName,
+        avatar: updatedProfile.avatar,
+        joinedAt: updatedProfile.joinedAt
+      }
+    )
 
     if (!registered) {
       throw new Error(`Username "${updates.username}" is already taken`)
