@@ -6,11 +6,11 @@ function CommentForm({ value, onChange, onSubmit, disabled = false }) {
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder='Write a comment'
+        placeholder='Write a reply'
         className='flex-1 px-3 py-2 rounded-full border bg-background'
       />
       <Button size='sm' type='submit' disabled={disabled || !value.trim()}>
-        Comment
+        Reply
       </Button>
     </form>
   )

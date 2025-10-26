@@ -11,8 +11,10 @@ import {
 } from '@/features/feed/data/activity'
 import { getUserMyFeed, openFeedByKey } from '@/features/feed/data/my-feed'
 import FeedSidebar from '@/features/feed/ui/FeedSidebar'
-import { shortPublicKey } from '@/lib/utils'
-import { Heart } from 'lucide-react'
+import CommentForm from '@/features/feed/ui/shared/CommentForm'
+import CommentList from '@/features/feed/ui/shared/CommentList'
+import { relativeTime } from '@/lib/utils'
+import { Flame } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -26,6 +28,7 @@ function Post() {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [liked, setLiked] = useState(false)
+  const [section, setSection] = useState('mine')
 
   useEffect(() => {
     let cancelled = false
@@ -94,9 +97,42 @@ function Post() {
     return (
       <div className='container p-4 md:p-6'>
         <div className='grid grid-cols-1 md:grid-cols-12 gap-4'>
-          <div className='md:col-span-3 hidden md:block'>
-            <FeedSidebar active={'global'} onChange={() => {}} />
-          </div>
+          <aside className='md:col-span-3 hidden md:block space-y-4'>
+            <div className='sticky top-16 backdrop-blur supports-[backdrop-filter]:bg-background/70 border rounded-xl shadow-sm p-4'>
+              <div className='flex items-center gap-3'>
+                <div className='h-12 w-12 rounded-full bg-muted overflow-hidden'>
+                  {profile?.avatar && (
+                    <img
+                      className='h-full w-full object-cover'
+                      src={profile.avatar}
+                      alt={profile?.username}
+                    />
+                  )}
+                </div>
+                <div>
+                  <div className='font-semibold'>
+                    {profile?.username || profile?.shortPublicKey}
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    Corner Host
+                  </div>
+                </div>
+              </div>
+              <div className='mt-4 grid grid-cols-2 gap-3 text-sm'>
+                <div className='p-2 rounded-md border bg-card'>
+                  <div className='text-xs text-muted-foreground'>Neighbors</div>
+                  <div className='font-medium'>0</div>
+                </div>
+                <div className='p-2 rounded-md border bg-card'>
+                  <div className='text-xs text-muted-foreground'>
+                    Linked Corners
+                  </div>
+                  <div className='font-medium'>0</div>
+                </div>
+              </div>
+            </div>
+            {/* Removed legacy tabs sidebar; sticky tabs exist in main section */}
+          </aside>
           <div className='md:col-span-9 space-y-4'>
             <Card className='p-4 space-y-3'>
               <div className='flex items-center gap-3'>
@@ -124,6 +160,41 @@ function Post() {
           <FeedSidebar active={'global'} onChange={() => {}} />
         </div>
         <div className='md:col-span-9 space-y-4'>
+          {/* Sticky tab bar */}
+          <div className='sticky top-0 z-10 -mx-4 md:mx-0 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b'>
+            <div className='px-4 md:px-0 py-2 flex gap-2'>
+              <button
+                className={`px-3 py-1.5 rounded-full text-sm transition ${
+                  section === 'mine'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
+                }`}
+                onClick={() => setSection('mine')}
+              >
+                My Corner
+              </button>
+              <button
+                className={`px-3 py-1.5 rounded-full text-sm transition ${
+                  section === 'following'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
+                }`}
+                onClick={() => setSection('following')}
+              >
+                Linked Corners
+              </button>
+              <button
+                className={`px-3 py-1.5 rounded-full text-sm transition ${
+                  section === 'global'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
+                }`}
+                onClick={() => setSection('global')}
+              >
+                The Neighborhood
+              </button>
+            </div>
+          </div>
           <div>
             <button
               onClick={() => navigate(-1)}
@@ -146,7 +217,7 @@ function Post() {
                     {profile?.username || profile?.shortPublicKey}
                   </div>
                   <div className='text-xs text-muted-foreground'>
-                    {new Date(post.createdAt).toLocaleString()}
+                    {relativeTime(post.createdAt)}
                   </div>
                 </div>
                 <div className='mt-2 whitespace-pre-wrap text-[15px] leading-6'>
@@ -161,9 +232,9 @@ function Post() {
                     aria-pressed={liked}
                     aria-label={liked ? 'Unlike' : 'Like'}
                   >
-                    <Heart
+                    <Flame
                       className={
-                        liked ? 'h-4 w-4 text-red-500 fill-current' : 'h-4 w-4'
+                        liked ? 'h-4 w-4 text-primary  fill-current' : 'h-4 w-4'
                       }
                     />
                     <span>{likes}</span>
@@ -175,54 +246,17 @@ function Post() {
 
           <Card className='p-4 space-y-4'>
             <div className='flex items-center justify-between'>
-              <h3 className='text-lg font-semibold'>Comments</h3>
+              <h3 className='text-lg font-semibold'>Echoes</h3>
               <div className='text-sm text-muted-foreground'>
                 {comments.length} total
               </div>
             </div>
-            <form onSubmit={onComment} className='flex gap-2'>
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder='Write a comment'
-                className='flex-1 px-3 py-2 rounded-full border bg-background'
-              />
-              <Button size='sm' type='submit' disabled={!commentText.trim()}>
-                Comment
-              </Button>
-            </form>
-            <div className='space-y-3'>
-              {comments.map((c) => (
-                <div key={c.key} className='flex items-start gap-3'>
-                  <Avatar className='h-8 w-8'>
-                    <AvatarImage
-                      src={`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${
-                        c.commenterKeyHex || 'U'
-                      }`}
-                      alt={c.commenterKeyHex || 'commenter'}
-                    />
-                    <AvatarFallback>
-                      {(shortPublicKey(c.commenterKeyHex || 'U') || 'U')
-                        .slice(0, 1)
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1'>
-                    <div className='text-sm'>
-                      <span className='font-medium mr-2'>
-                        {c.commenterKeyHex
-                          ? shortPublicKey(c.commenterKeyHex)
-                          : 'Anon'}
-                      </span>
-                      {c.text}
-                    </div>
-                    <div className='text-xs text-muted-foreground mt-1'>
-                      {new Date(c.ts).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CommentForm
+              value={commentText}
+              onChange={setCommentText}
+              onSubmit={onComment}
+            />
+            <CommentList comments={comments} emptyText='No replies yet.' />
           </Card>
         </div>
       </div>

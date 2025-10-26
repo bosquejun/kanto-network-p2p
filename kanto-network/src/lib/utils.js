@@ -39,3 +39,32 @@ export const getAppOS = () => {
 export const getToastById = (id) => {
   return toast.getToasts().find((t) => t.id === id)
 }
+
+// Relative time like "3h ago"
+export const relativeTime = (
+  ts,
+  locale = typeof navigator !== 'undefined' ? navigator.language : 'en'
+) => {
+  const toSeconds = (ms) => Math.round(ms / 1000)
+  const diffSeconds = toSeconds(Number(ts || 0) - Date.now())
+  if (!Number.isFinite(diffSeconds)) return 'now'
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  const divisions = [
+    { unit: 'year', secs: 60 * 60 * 24 * 365 },
+    { unit: 'month', secs: 60 * 60 * 24 * 30 },
+    { unit: 'week', secs: 60 * 60 * 24 * 7 },
+    { unit: 'day', secs: 60 * 60 * 24 },
+    { unit: 'hour', secs: 60 * 60 },
+    { unit: 'minute', secs: 60 },
+    { unit: 'second', secs: 1 }
+  ]
+
+  for (const { unit, secs } of divisions) {
+    if (Math.abs(diffSeconds) >= secs || unit === 'second') {
+      const value = Math.round(diffSeconds / secs)
+      return rtf.format(value, unit)
+    }
+  }
+  return 'now'
+}

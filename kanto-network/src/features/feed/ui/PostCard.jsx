@@ -1,26 +1,25 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { useUser } from '@/context/UserContext'
 import {
-  commentOnPost,
-  getLocalLatestCommentsForPost,
   getLocalLikedStateForPost,
   getLocalLikesCountForPost,
+  getLocalRepliesCountForPost,
   toggleLikePost
 } from '@/features/feed/data/activity'
 import { getMyFeedKeys } from '@/features/feed/data/my-feed'
-import CommentForm from '@/features/feed/ui/shared/CommentForm'
-import CommentList from '@/features/feed/ui/shared/CommentList'
 import LikeButton from '@/features/feed/ui/shared/LikeButton'
+import { relativeTime } from '@/lib/utils'
+import { Flame, Megaphone, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function PostCard({ post }) {
   const { profile } = useUser()
+  const navigate = useNavigate()
   const [likes, setLikes] = useState(0)
-  const [latestComments, setLatestComments] = useState([])
+  const [repliesCount, setRepliesCount] = useState(0)
   const [isLiking, setIsLiking] = useState(false)
-  const [isCommenting, setIsCommenting] = useState(false)
-  const [commentText, setCommentText] = useState('')
   const [liked, setLiked] = useState(false)
   const [resolvedFeedKeyHex, setResolvedFeedKeyHex] = useState(
     post.feedKeyHex || ''
@@ -29,14 +28,14 @@ function PostCard({ post }) {
   useEffect(() => {
     let cancelled = false
     const load = async () => {
-      const [count, comments, likedState] = await Promise.all([
+      const [count, likedState, replyCount] = await Promise.all([
         getLocalLikesCountForPost(post.key),
-        getLocalLatestCommentsForPost(post.key, 2),
-        getLocalLikedStateForPost(post.key)
+        getLocalLikedStateForPost(post.key),
+        getLocalRepliesCountForPost(post.key)
       ])
       if (!cancelled) {
         setLikes(count)
-        setLatestComments(comments)
+        setRepliesCount(replyCount)
         setLiked(likedState)
       }
     }
@@ -78,26 +77,23 @@ function PostCard({ post }) {
     }
   }
 
-  const onComment = async (e) => {
-    e?.preventDefault?.()
-    if (!commentText.trim() || isCommenting) return
-    setIsCommenting(true)
-    try {
-      await commentOnPost({
-        postAuthorKeyHex: post.authorKeyHex || null,
-        postKey: post.key,
-        text: commentText.trim()
-      })
-      setCommentText('')
-      const comments = await getLocalLatestCommentsForPost(post.key, 2)
-      setLatestComments(comments)
-    } finally {
-      setIsCommenting(false)
-    }
+  const onCardClick = () => {
+    if (!resolvedFeedKeyHex) return
+    navigate(
+      `/feed/${encodeURIComponent(resolvedFeedKeyHex)}/posts/${encodeURIComponent(post.key)}`
+    )
   }
 
   return (
-    <div className='p-4 bg-card rounded-xl border shadow-sm'>
+    <div
+      className='p-4 bg-card rounded-xl border shadow-sm cursor-pointer'
+      onClick={onCardClick}
+      role='button'
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onCardClick()
+      }}
+    >
       <div className='flex gap-3'>
         <Avatar className='h-10 w-10'>
           <AvatarImage src={profile?.avatar} alt={profile?.username} />
@@ -107,51 +103,62 @@ function PostCard({ post }) {
         </Avatar>
         <div className='flex-1'>
           <div className='flex items-center gap-2'>
-            <div className='font-semibold'>
+            <Link
+              to={`/profile`}
+              className='font-semibold hover:underline'
+              onClick={(e) => e.stopPropagation()}
+            >
               {profile?.username || profile?.shortPublicKey}
-            </div>
+            </Link>
             <div className='text-xs text-muted-foreground'>
-              {new Date(post.createdAt).toLocaleString()}
+              {relativeTime(post.createdAt)}
             </div>
           </div>
           <div className='mt-2 text-[15px] leading-6 whitespace-pre-wrap'>
             {post.text}
           </div>
-          <div className='mt-2'>
-            {resolvedFeedKeyHex ? (
-              <Link
-                to={`/feed/${encodeURIComponent(resolvedFeedKeyHex)}/posts/${encodeURIComponent(post.key)}`}
-                className='text-sm text-primary hover:underline'
-              >
-                View details
-              </Link>
-            ) : (
-              <span className='text-sm text-muted-foreground'>
-                View details
-              </span>
-            )}
+          <div className='mt-3 flex items-center gap-6 text-sm text-muted-foreground'>
+            <div className='flex items-center gap-1'>
+              <Flame className='h-4 w-4' />
+              <span>{likes}</span>
+            </div>
+            <div className='flex items-center gap-1'>
+              <MessageCircle className='h-4 w-4' />
+              <span>{repliesCount}</span>
+            </div>
           </div>
 
-          <div className='mt-3 flex items-center gap-3'>
+          <div className='mt-2 flex items-center gap-2 w-full'>
             <LikeButton
+              variantWhenIdle='outline'
+              variantWhenLiked='outline'
               liked={liked}
               count={likes}
-              onToggle={onLike}
+              onToggle={(e) => {
+                e.stopPropagation()
+                onLike()
+              }}
               disabled={isLiking}
             />
-          </div>
-
-          <div className='mt-3'>
-            <CommentList comments={latestComments} />
-          </div>
-
-          <div className='mt-3'>
-            <CommentForm
-              value={commentText}
-              onChange={setCommentText}
-              onSubmit={onComment}
-              disabled={isCommenting}
-            />
+            <Button
+              variant='outline'
+              onClick={(e) => {
+                e.stopPropagation()
+                onCardClick()
+              }}
+            >
+              Reply
+            </Button>
+            <Button
+              variant='outline'
+              onClick={(e) => {
+                e.stopPropagation()
+                // TODO: Echo action
+              }}
+            >
+              <Megaphone />
+              Echo
+            </Button>
           </div>
         </div>
       </div>

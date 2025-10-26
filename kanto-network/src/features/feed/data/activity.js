@@ -4,7 +4,7 @@ import { getUserPublicKey } from '@/modules/user/user'
 import Hyperbee from 'hyperbee'
 
 export const getUserActivity = async () => {
-  const core = store.get({ name: 'user.activity' })
+  const core = store.get({ name: 'sparks-echoes-wall' })
   await core.ready()
   const db = new Hyperbee(core, { keyEncoding: 'utf-8', valueEncoding: 'json' })
   await db.ready()
@@ -131,4 +131,17 @@ export const getLocalLatestCommentsForPost = async (postKey, limit = 2) => {
     }
   }
   return comments
+}
+
+export const getLocalRepliesCountForPost = async (postKey) => {
+  const { db } = await getUserActivity()
+  const prefix = `cmt:${postKey}:`
+  let count = 0
+  for await (const node of db.createReadStream({
+    gte: prefix,
+    lt: `${prefix}\uFFFF`
+  })) {
+    if (node.value?.type === 'comment') count++
+  }
+  return count
 }

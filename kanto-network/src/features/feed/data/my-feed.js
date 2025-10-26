@@ -5,7 +5,7 @@ import Hyperbee from 'hyperbee'
 
 export const getUserMyFeed = async () => {
   const core = store.get({
-    name: 'user.myFeed'
+    name: 'corner-host-notes-wall'
   })
   await core.ready()
 

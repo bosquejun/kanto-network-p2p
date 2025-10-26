@@ -8,7 +8,8 @@ function LikeButton({
   disabled = false,
   size = 'sm',
   variantWhenLiked = 'ghost',
-  variantWhenIdle = 'ghost'
+  variantWhenIdle = 'ghost',
+  Icon = Heart
 }) {
   const variant = liked ? variantWhenLiked : variantWhenIdle
   return (
@@ -19,9 +20,9 @@ function LikeButton({
       disabled={disabled}
       className='flex items-center gap-1'
       aria-pressed={liked}
-      aria-label={liked ? 'Unlike' : 'Like'}
+      aria-label={liked ? 'Remove Spark' : 'Spark'}
     >
-      <Heart
+      <Icon
         className={liked ? 'h-4 w-4 text-red-500 fill-current' : 'h-4 w-4'}
       />
       {count > 0 && <span>{count}</span>}

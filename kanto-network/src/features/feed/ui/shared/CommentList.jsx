@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { shortPublicKey } from '@/lib/utils'
 
-function CommentList({ comments, emptyText = 'No comments yet.' }) {
+function CommentList({ comments, emptyText = 'No replies yet.' }) {
   if (!comments || comments.length === 0) {
     return <div className='text-sm text-muted-foreground'>{emptyText}</div>
   }
