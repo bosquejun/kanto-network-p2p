@@ -10,6 +10,7 @@ const usernameRegistry = {
   discoveredRegistryKeys: new Set(), // Track discovered registry keys (in-memory)
   metadataDb: null, // Persisted metadata about discovered registries
   isInitialized: false,
+  updateListeners: new Set(), // Listeners for registry updates
 
   async initNetwork() {
     if (this.isInitialized) {
@@ -80,6 +81,8 @@ const usernameRegistry = {
               console.log(
                 `🔄 Peer registry ${peerKeyHex.slice(0, 8)}... updated`
               )
+              // Notify listeners that a registry was updated
+              this._notifyListeners(peerKeyHex)
             })
           }
         } catch (err) {
@@ -89,6 +92,12 @@ const usernameRegistry = {
 
       // Send my registry key to the peer
       conn.write(myCore.key)
+    })
+
+    // Listen to my own registry updates too
+    myCore.on('append', () => {
+      console.log('🔄 My registry updated')
+      this._notifyListeners(this.myRegistryKey)
     })
 
     // Join the global discovery topic
@@ -178,21 +187,60 @@ const usernameRegistry = {
     // Check if username exists in ANY registry (mine or peers')
     const existing = await this.lookupUsername(username)
     if (existing) {
-      console.log(`❌ Username "${username}" is already taken`)
-      return false
+      // If username exists but belongs to this user, allow update
+      if (existing.publicKey === userData.publicKey) {
+        console.log(
+          `🔄 Username "${username}" exists and belongs to this user, updating...`
+        )
+        // Continue to update the registration
+      } else {
+        console.log(
+          `❌ Username "${username}" is already taken by another user`
+        )
+        return false
+      }
     }
 
-    // Register in MY registry
+    // Check if this public key has any OLD username entries in MY registry
+    // If so, we need to delete them to avoid stale data
+    const oldEntries = []
+    try {
+      for await (const entry of this.myRegistry.createReadStream()) {
+        if (
+          entry.value?.publicKey === userData.publicKey &&
+          entry.key !== username
+        ) {
+          oldEntries.push(entry.key)
+        }
+      }
+
+      // Delete old username entries for this public key
+      for (const oldUsername of oldEntries) {
+        console.log(`🗑️ Deleting old username entry: "${oldUsername}"`)
+        await this.myRegistry.del(oldUsername)
+      }
+    } catch (err) {
+      console.error('Error cleaning up old username entries:', err)
+    }
+
+    // Register or update in MY registry
     const registrationData = {
       username,
       publicKey: userData.publicKey,
-      registeredAt: Date.now(),
+      registeredAt: existing?.registeredAt || Date.now(), // Keep original registration date if updating
       displayName: userData.displayName || '',
       ...userData
     }
 
+    console.log(
+      `💾 ${existing ? 'Updating' : 'Registering'} data for "${username}" in registry...`
+    )
     await this.myRegistry.put(username, registrationData)
-    console.log(`✅ Successfully registered "${username}" in my registry`)
+    console.log(`🔄 Calling core.update() to flush changes...`)
+    await this.myRegistry.core.update() // Flush changes to trigger append event
+    console.log(
+      `✅ Successfully ${existing ? 'updated' : 'registered'} "${username}" in my registry. Core update completed.`
+    )
 
     return true
   },
@@ -227,6 +275,77 @@ const usernameRegistry = {
         }
       } catch (err) {
         // Skip if peer registry has issues
+        console.error(
+          `Error checking peer registry ${peerKeyHex.slice(0, 8)}:`,
+          err
+        )
+      }
+    }
+
+    return null
+  },
+
+  /**
+   * Look up user data by public key (reverse lookup)
+   * @param {string} publicKeyHex - Public key to look up
+   * @returns {Promise<Object|null>} - User data if found (with username, displayName, etc.)
+   */
+  async lookupByPublicKey(publicKeyHex) {
+    if (!this.isInitialized || !this.myRegistry) {
+      throw new Error('Username registry not initialized')
+    }
+
+    // Check my own registry first - collect all matches and return the most recent
+    let matches = []
+    try {
+      for await (const entry of this.myRegistry.createReadStream()) {
+        if (entry.value?.publicKey === publicKeyHex) {
+          matches.push({ username: entry.key, ...entry.value })
+        }
+      }
+
+      if (matches.length > 0) {
+        if (matches.length > 1) {
+          console.warn(
+            `⚠️ Found ${matches.length} entries for public key ${publicKeyHex.slice(0, 8)}... in my registry. Using most recent.`
+          )
+        }
+        // Return the most recent entry (highest registeredAt timestamp)
+        return matches.reduce((latest, current) =>
+          (current.registeredAt || 0) > (latest.registeredAt || 0)
+            ? current
+            : latest
+        )
+      }
+    } catch (err) {
+      console.error('Error checking my registry:', err)
+    }
+
+    // Check all discovered peer registries
+    for (const peerKeyHex of this.discoveredRegistryKeys) {
+      try {
+        const peerRegistry = await this._getRegistry(peerKeyHex)
+        matches = []
+        for await (const entry of peerRegistry.createReadStream()) {
+          if (entry.value?.publicKey === publicKeyHex) {
+            matches.push({ username: entry.key, ...entry.value })
+          }
+        }
+
+        if (matches.length > 0) {
+          if (matches.length > 1) {
+            console.warn(
+              `⚠️ Found ${matches.length} entries for public key ${publicKeyHex.slice(0, 8)}... in peer registry. Using most recent.`
+            )
+          }
+          // Return the most recent entry
+          return matches.reduce((latest, current) =>
+            (current.registeredAt || 0) > (latest.registeredAt || 0)
+              ? current
+              : latest
+          )
+        }
+      } catch (err) {
         console.error(
           `Error checking peer registry ${peerKeyHex.slice(0, 8)}:`,
           err
@@ -329,6 +448,42 @@ const usernameRegistry = {
     }
 
     return removedCount
+  },
+
+  /**
+   * Subscribe to registry updates
+   * @param {Function} callback - Called when any registry is updated with registryKeyHex
+   * @returns {Function} - Unsubscribe function
+   */
+  onUpdate(callback) {
+    this.updateListeners.add(callback)
+    console.log(
+      `👂 New listener subscribed. Total listeners: ${this.updateListeners.size}`
+    )
+    return () => {
+      this.updateListeners.delete(callback)
+      console.log(
+        `👋 Listener unsubscribed. Total listeners: ${this.updateListeners.size}`
+      )
+    }
+  },
+
+  /**
+   * Notify all listeners that a registry was updated
+   * @param {string} registryKeyHex - The registry that was updated
+   * @private
+   */
+  _notifyListeners(registryKeyHex) {
+    console.log(
+      `📢 Notifying ${this.updateListeners.size} listeners about registry update: ${registryKeyHex.slice(0, 8)}...`
+    )
+    for (const listener of this.updateListeners) {
+      try {
+        listener(registryKeyHex)
+      } catch (err) {
+        console.error('Error in registry update listener:', err)
+      }
+    }
   }
 }
 

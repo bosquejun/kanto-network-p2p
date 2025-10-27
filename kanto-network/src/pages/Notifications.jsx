@@ -12,7 +12,7 @@ function Notifications() {
   const notifications = []
 
   return (
-    <div className='container p-4 md:p-6'>
+    <div className='container p-4'>
       <h2 className='text-xl font-semibold'>Notifications</h2>
       <p className='text-muted-foreground mt-1'>
         Stay updated with your latest notifications.

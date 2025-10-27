@@ -31,15 +31,15 @@ function TooltipContent({ className, sideOffset = 0, children, ...props }) {
         data-slot='tooltip-content'
         sideOffset={sideOffset}
         className={cn(
-          'border border-border bg-card text-card-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-40 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md text-xs text-balance',
+          'border border-border bg-card text-card-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-[51] w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md text-xs text-balance',
           className
         )}
         {...props}
       >
-        <div className='relative z-[41] bg-card px-3 py-1.5 rounded-md'>
+        <div className='relative z-[52] bg-card px-3 py-1.5 rounded-md'>
           {children}
         </div>
-        <TooltipPrimitive.Arrow className='border border-border bg-card fill-card z-40 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]' />
+        <TooltipPrimitive.Arrow className='border border-border bg-card fill-card z-[51] size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]' />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )

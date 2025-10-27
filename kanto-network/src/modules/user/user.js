@@ -121,25 +121,40 @@ export const updateUserProfile = async (updates) => {
   await db.put('profile', updatedProfile)
   await db.update()
 
-  // If username changed, register in global registry
-  if (updates.username && updates.username !== currentProfile.value.username) {
-    console.log(
-      `📝 Registering new username "${updates.username}" in global registry...`
-    )
+  // Check if username, displayName, or avatar changed
+  const usernameChanged =
+    updates.username && updates.username !== currentProfile.value.username
+  const displayNameChanged =
+    updates.displayName !== undefined &&
+    updates.displayName !== currentProfile.value.displayName
+  const avatarChanged =
+    updates.avatar !== undefined &&
+    updates.avatar !== currentProfile.value.avatar
+
+  // Update global registry if any relevant fields changed
+  if (usernameChanged || displayNameChanged || avatarChanged) {
     const publicKey = toHex(db.core.keyPair.publicKey)
+    const currentUsername = updatedProfile.username
 
-    const registered = await usernameRegistry.registerUsername(
-      updates.username,
-      {
-        publicKey,
-        displayName: updatedProfile.displayName,
-        avatar: updatedProfile.avatar,
-        joinedAt: updatedProfile.joinedAt
+    // Only sync if user has a username
+    if (currentUsername) {
+      console.log(
+        `📝 Syncing profile updates to global registry for "${currentUsername}"...`
+      )
+
+      const registered = await usernameRegistry.registerUsername(
+        currentUsername,
+        {
+          publicKey,
+          displayName: updatedProfile.displayName,
+          avatar: updatedProfile.avatar,
+          joinedAt: updatedProfile.joinedAt
+        }
+      )
+
+      if (!registered && usernameChanged) {
+        throw new Error(`Username "${currentUsername}" is already taken`)
       }
-    )
-
-    if (!registered) {
-      throw new Error(`Username "${updates.username}" is already taken`)
     }
   }
 

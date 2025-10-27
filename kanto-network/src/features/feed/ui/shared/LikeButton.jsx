@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
-import { Heart } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Flame } from 'lucide-react'
 
 function LikeButton({
   liked,
@@ -9,7 +10,9 @@ function LikeButton({
   size = 'sm',
   variantWhenLiked = 'ghost',
   variantWhenIdle = 'ghost',
-  Icon = Heart
+  Icon = Flame,
+  className,
+  label
 }) {
   const variant = liked ? variantWhenLiked : variantWhenIdle
   return (
@@ -18,14 +21,15 @@ function LikeButton({
       variant={variant}
       onClick={onToggle}
       disabled={disabled}
-      className='flex items-center gap-1'
+      className={cn('flex items-center gap-1', className)}
       aria-pressed={liked}
       aria-label={liked ? 'Remove Spark' : 'Spark'}
     >
       <Icon
-        className={liked ? 'h-4 w-4 text-red-500 fill-current' : 'h-4 w-4'}
+        className={liked ? 'h-4 w-4 text-primary fill-current' : 'h-4 w-4'}
       />
-      {count > 0 && <span>{count}</span>}
+      {label && <span>{label}</span>}
+      {!label && count > 0 && <span>{count}</span>}
     </Button>
   )
 }

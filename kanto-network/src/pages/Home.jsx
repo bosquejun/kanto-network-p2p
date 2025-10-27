@@ -1,38 +1,111 @@
+import { Button } from '@/components/ui/button'
 import { useUser } from '@/context/UserContext'
 import FeedComposer from '@/features/feed/ui/FeedComposer'
 import FeedList from '@/features/feed/ui/FeedList'
-import { useState } from 'react'
+import usernameRegistry from '@/modules/global/username-registry'
+import { getUserPublicKey } from '@/modules/user/user'
+import { useEffect, useState } from 'react'
 
 function Home() {
   const { profile, isProfileLoaded } = useUser()
   const [refreshToken, setRefreshToken] = useState(0)
   const [section, setSection] = useState('mine')
+  const [registryData, setRegistryData] = useState(null)
+
+  // Fetch user's registry data (refetch when profile changes)
+  useEffect(() => {
+    let cancelled = false
+    const fetchRegistryData = async () => {
+      try {
+        const publicKey = await getUserPublicKey()
+        if (publicKey) {
+          const userData = await usernameRegistry.lookupByPublicKey(publicKey)
+          if (!cancelled && userData) {
+            console.log(`✅ Home: Updated sidebar registry data:`, userData)
+            setRegistryData(userData)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching registry data:', err)
+      }
+    }
+    fetchRegistryData()
+
+    // Listen for registry updates
+    const unsubscribe = usernameRegistry.onUpdate((registryKeyHex) => {
+      console.log(
+        `🔄 Home: Registry ${registryKeyHex.slice(0, 8)}... updated, refetching sidebar data`
+      )
+      // Refetch registry data when any registry updates
+      fetchRegistryData()
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [profile?.updatedAt])
+
+  // Get display name and subtitle based on registry data
+  const getDisplayInfo = () => {
+    if (registryData?.displayName) {
+      return {
+        primary: registryData.displayName,
+        secondary: registryData.username ? `@${registryData.username}` : null
+      }
+    }
+    if (registryData?.username) {
+      return {
+        primary: registryData.username,
+        secondary: profile?.shortPublicKey
+      }
+    }
+    // Fallback to local profile
+    if (profile?.username) {
+      return {
+        primary: profile.username,
+        secondary: profile?.shortPublicKey
+      }
+    }
+    return {
+      primary: profile?.shortPublicKey || 'Anonymous',
+      secondary: null
+    }
+  }
+
+  const getAvatar = () => {
+    if (registryData?.avatar) return registryData.avatar
+    return profile?.avatar
+  }
+
+  const displayInfo = getDisplayInfo()
+  const avatar = getAvatar()
 
   // Posts list is handled by FeedList
 
   return (
-    <div className='container p-4 md:p-6'>
-      <div className='grid grid-cols-1 md:grid-cols-12 gap-6'>
+    <div className='container p-4'>
+      <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
         {/* LEFT: Mini Corner Host card (sticky) */}
         <aside className='md:col-span-3 space-y-4'>
-          <div className='sticky top-16 backdrop-blur supports-[backdrop-filter]:bg-background/70 border rounded-xl shadow-sm p-4'>
+          <div className='sticky top-6 backdrop-blur supports-[backdrop-filter]:bg-background/70 border rounded-xl shadow-sm p-4'>
             <div className='flex items-center gap-3'>
               <div className='h-12 w-12 rounded-full bg-muted overflow-hidden'>
-                {profile?.avatar && (
+                {avatar && (
                   <img
                     className='h-full w-full object-cover'
-                    src={profile.avatar}
-                    alt={profile?.username}
+                    src={avatar}
+                    alt={displayInfo.primary}
                   />
                 )}
               </div>
-              <div>
-                <div className='font-semibold'>
-                  {isProfileLoaded
-                    ? profile?.username || profile?.shortPublicKey
-                    : 'Loading...'}
+              <div className='flex-1 min-w-0'>
+                <div className='font-semibold truncate'>
+                  {isProfileLoaded ? displayInfo.primary : 'Loading...'}
                 </div>
-                <div className='text-xs text-muted-foreground'>Corner Host</div>
+                <div className='text-xs text-muted-foreground truncate'>
+                  {displayInfo.secondary || 'Corner Host'}
+                </div>
               </div>
             </div>
             <div className='mt-4 grid grid-cols-2 gap-3 text-sm'>
@@ -57,36 +130,29 @@ function Home() {
           {/* Sticky tab bar */}
           <div className='sticky top-0 z-10 -mx-4 md:mx-0 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b'>
             <div className='px-4 md:px-0 py-2 flex gap-2'>
-              <button
-                className={`px-3 py-1.5 rounded-full text-sm transition ${
-                  section === 'mine'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
-                }`}
+              <Button
+                className='rounded-full'
+                variant={section === 'mine' ? 'default' : 'outline'}
                 onClick={() => setSection('mine')}
               >
                 My Corner
-              </button>
-              <button
-                className={`px-3 py-1.5 rounded-full text-sm transition ${
-                  section === 'following'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
-                }`}
+              </Button>
+              <Button
+                disabled
+                className='rounded-full'
+                variant={section === 'following' ? 'default' : 'outline'}
                 onClick={() => setSection('following')}
               >
                 Linked Corners
-              </button>
-              <button
-                className={`px-3 py-1.5 rounded-full text-sm transition ${
-                  section === 'global'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
-                }`}
+              </Button>
+              <Button
+                disabled
+                className='rounded-full'
+                variant={section === 'global' ? 'default' : 'outline'}
                 onClick={() => setSection('global')}
               >
                 The Neighborhood
-              </button>
+              </Button>
             </div>
           </div>
 

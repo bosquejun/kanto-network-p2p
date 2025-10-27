@@ -31,9 +31,6 @@ const rnd = () => Math.random().toString(36).slice(2, 10)
 export const toggleLikePost = async ({ postAuthorKeyHex, postKey }) => {
   const { db } = await getUserActivity()
   const likerKeyHex = await getUserPublicKey()
-  if (likerKeyHex && postAuthorKeyHex && likerKeyHex === postAuthorKeyHex) {
-    return { liked: false, prevented: true }
-  }
   const key = likeKey(postKey, likerKeyHex)
   const existing = await db.get(key)
   if (existing) {

@@ -12,7 +12,7 @@ function Explore() {
   const exploreItems = []
 
   return (
-    <div className='container p-4 md:p-6'>
+    <div className='container p-4'>
       <h2 className='text-xl font-semibold'>Explore</h2>
       <p className='text-muted-foreground mt-1'>
         Discover new content and connections.
